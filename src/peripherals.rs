@@ -1,28 +1,39 @@
-pub struct Register16 {
-    addr: u32,
-}
+use core::ops::{BitOr, BitAnd, Not};
 
-impl Register16 {
-    pub unsafe fn read(&self) -> u16 {
-        let ptr = self.addr as *const u16;
-        ptr.read_volatile()
-    }
+pub trait Bitwise: Copy + BitOr<Output = Self> + BitAnd<Output = Self> + Not<Output = Self> { }
+impl Bitwise for u16 { }
+impl Bitwise for u32 { }
 
-    pub unsafe fn write(&self, value: u16) {
-        let ptr = self.addr as *mut u16;
-        ptr.write_volatile(value);
-    }
+pub trait Register<T: Bitwise> {
+    unsafe fn read(&self) -> T;
+    unsafe fn write(&self, value: T);
 
-    pub unsafe fn write_or(&self, value: u16) {
+    unsafe fn write_or(&self, value: T) {
         let old_reg_value = self.read();
         let new_reg_value = old_reg_value | value;
         self.write(new_reg_value);
     }
 
-    pub unsafe fn write_masked(&self, mask: u16, value: u16) {
+    unsafe fn write_masked(&self, mask: T, value: T) {
         let old_reg_value = self.read();
         let new_reg_value = (old_reg_value & !mask) | (value & mask);
         self.write(new_reg_value);
+    }
+}
+
+pub struct Register16 {
+    addr: u32,
+}
+
+impl Register<u16> for Register16 {
+    unsafe fn read(&self) -> u16 {
+        let ptr = self.addr as *const u16;
+        ptr.read_volatile()
+    }
+
+    unsafe fn write(&self, value: u16) {
+        let ptr = self.addr as *mut u16;
+        ptr.write_volatile(value);
     }
 }
 
@@ -30,27 +41,15 @@ pub struct Register32 {
     addr: u32,
 }
 
-impl Register32 {
-    pub unsafe fn read(&self) -> u32 {
+impl Register<u32> for Register32 {
+    unsafe fn read(&self) -> u32 {
         let ptr = self.addr as *const u32;
         ptr.read_volatile()
     }
 
-    pub unsafe fn write(&self, value: u32) {
+    unsafe fn write(&self, value: u32) {
         let ptr = self.addr as *mut u32;
         ptr.write_volatile(value);
-    }
-
-    pub unsafe fn write_or(&self, value: u32) {
-        let old_reg_value = self.read();
-        let new_reg_value = old_reg_value | value;
-        self.write(new_reg_value);
-    }
-
-    pub unsafe fn write_masked(&self, mask: u32, value: u32) {
-        let old_reg_value = self.read();
-        let new_reg_value = (old_reg_value & !mask) | (value & mask);
-        self.write(new_reg_value);
     }
 }
 
