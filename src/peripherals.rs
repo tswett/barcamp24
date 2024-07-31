@@ -159,7 +159,7 @@ impl Usart {
     }
 
     pub fn enable_rx_tx(&self) {
-        let cr1 = Register16 { addr: self.base + 0x00 };
+        let cr1 = Register16 { addr: self.base + 0x0c };
         let ue_enable = 1 << 13;
         let te_enable = 1 << 3;
         let re_enable = 1 << 2;
