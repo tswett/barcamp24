@@ -78,6 +78,12 @@ pub struct RccApb2enr;
 impl RccApb2enr {
     const REG: Register32 = Register32 { addr: 0x40023844 };
 
+    pub fn enable_spi5(&self) {
+        unsafe {
+            Self::REG.write_or(1 << 20);
+        }
+    }
+
     pub fn enable_usart1(&self) {
         unsafe {
             Self::REG.write_or(1 << 4);
@@ -99,6 +105,15 @@ impl Gpio {
 
         unsafe {
             moder.write_masked(mask, value);
+        }
+    }
+
+    pub fn set_low(&self, pin: u8) {
+        let bsrr = Register32 { addr: self.base + 0x18 };
+        let value = 1 << (pin + 16);
+
+        unsafe {
+            bsrr.write(value);
         }
     }
 
@@ -133,6 +148,9 @@ impl Gpio {
 }
 
 pub const GPIOA: Gpio = Gpio { base: 0x40020000 };
+pub const GPIOC: Gpio = Gpio { base: 0x40020800 };
+pub const GPIOD: Gpio = Gpio { base: 0x40020c00 };
+pub const GPIOF: Gpio = Gpio { base: 0x40021400 };
 pub const GPIOG: Gpio = Gpio { base: 0x40021800 };
 
 pub enum GpioMode {
@@ -141,6 +159,7 @@ pub enum GpioMode {
 }
 
 pub enum AltFunc {
+    AF5 = 5,
     AF7 = 7,
 }
 
@@ -180,3 +199,67 @@ impl Usart {
 }
 
 pub const USART1: Usart = Usart { base: 0x40011000 };
+
+pub struct Spi {
+    base: u32,
+}
+
+impl Spi {
+    pub fn set_baud_divisor(&self, div: SpiBaudDivisor) {
+        let cr1 = Register16 { addr: self.base + 0x00 };
+
+        unsafe {
+            cr1.write_masked(0b111 << 3, div as u16);
+        }
+    }
+
+    pub fn software_sub_management_sub_select_high_main_mode_spi_enable(&self) {
+        let cr1 = Register16 { addr: self.base + 0x00 };
+
+        let ssm_enable = 9;
+        let ssi_high = 8;
+        let spe_enable = 6;
+        let mstr_main = 2;
+
+        unsafe {
+            cr1.write_or(ssm_enable | ssi_high | spe_enable | mstr_main);
+        }
+    }
+
+    pub fn write_byte(&self, b: u8) {
+        let dr = Register16 { addr: self.base + 0x0c };
+
+        unsafe {
+            while !self.transmit_buf_empty() {}
+            dr.write(b as u16);
+            while !self.transmit_buf_empty() {}
+            while self.busy() {}
+        }
+    }
+
+    pub fn transmit_buf_empty(&self) -> bool {
+        let sr = Register16 { addr: self.base + 0x08 };
+
+        unsafe {
+            let status_word = sr.read();
+            let result = (status_word & (1 << 1)) != 0;
+            return result;
+        }
+    }
+
+    pub fn busy(&self) -> bool {
+        let sr = Register16 { addr: self.base + 0x08 };
+
+        unsafe {
+            let status_word = sr.read();
+            let result = (status_word & (1 << 7)) != 0;
+            return result;
+        }
+    }
+}
+
+pub const SPI5: Spi = Spi { base: 0x40015000 };
+
+pub enum SpiBaudDivisor {
+    Div2 = 0 << 3,
+}
