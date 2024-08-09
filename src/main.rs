@@ -34,7 +34,7 @@ fn main() -> ! {
     }
 
     lcd_set_up_spi();
-    lcd_test();
+    lcd_set_up_driver();
 
     draw_demo();
 
@@ -71,9 +71,13 @@ fn lcd_set_up_spi() {
     SPI5.software_sub_management_sub_select_high_main_mode_spi_enable();
 }
 
-fn lcd_test() {
+fn lcd_set_up_driver() {
     lcd_command(LcdCommand::ExitSleepMode);
+
     lcd_command(LcdCommand::DisplayOn);
+
+    lcd_command(LcdCommand::MemoryAccessControl);
+    lcd_data(0b11100000); // reverse row order, reverse column order, exchange rows with columns
 }
 
 fn draw_demo() {
@@ -134,6 +138,7 @@ enum LcdCommand {
     ColumnAddressSet = 0x2a,
     RowAddressSet = 0x2b,
     MemoryWrite = 0x2c,
+    MemoryAccessControl = 0x36,
 }
 
 fn lcd_command(cmd: LcdCommand) {
