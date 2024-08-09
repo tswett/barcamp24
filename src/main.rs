@@ -81,15 +81,23 @@ fn lcd_set_up_driver() {
 }
 
 fn draw_demo() {
-    draw_string_at(0, 0, "DAD BAGGED A CAB");
+    draw_string_at(0, 0, "DAD BAGGED THAT CAB");
     draw_string_at(5, 5, "EGAD A BAD CABBAGE");
+    draw_string_at(8, 3, "ALAS DAD HAD A GLASS SALAD");
+    draw_string_at(14, 16, "SPHINX OF BLACK QUARTZ");
+    draw_string_at(15, 21, "JUDGE MY VOW");
+
+    draw_string_at(21, 0, "YOU CAN SEE THAT THE TEXT IS NOT APPEARING ON THE");
+    draw_string_at(22, 0, "SCREEN VERY FAST==THIS IS BECAUSE WE ARE COMMUNICAT=");
+    draw_string_at(23, 0, "ING WITH THE DISPLAY DRIVER USING SPI AND APPARENTLY");
+    draw_string_at(24, 0, "THAT IS A LOT SLOWER THAN EXPECTED FOR SOME REASON");
 }
 
 fn draw_string_at(row: u16, column: u16, str: &str) {
     let mut i = 0;
 
     for char_byte in str.as_bytes() {
-        draw_char_at(row, column + i, *char_byte % 8);
+        draw_char_at(row, column + i, *char_byte % 32);
         i += 1;
     }
 }
