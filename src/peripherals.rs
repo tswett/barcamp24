@@ -64,6 +64,24 @@ impl RccAhb1enr {
         }
     }
 
+    pub fn enable_gpioc(&self) {
+        unsafe {
+            Self::REG.write_or(1 << 2);
+        }
+    }
+
+    pub fn enable_gpiod(&self) {
+        unsafe {
+            Self::REG.write_or(1 << 3);
+        }
+    }
+
+    pub fn enable_gpiof(&self) {
+        unsafe {
+            Self::REG.write_or(1 << 5);
+        }
+    }
+
     pub fn enable_gpiog(&self) {
         unsafe {
             Self::REG.write_or(1 << 6);
@@ -205,53 +223,47 @@ pub struct Spi {
 }
 
 impl Spi {
-    pub fn set_baud_divisor(&self, div: SpiBaudDivisor) {
-        let cr1 = Register16 { addr: self.base + 0x00 };
+    fn cr1(&self) -> Register16 { Register16 { addr: self.base + 0x00 } }
+    pub fn sr(&self) -> Register16 { Register16 { addr: self.base + 0x08 } }
+    fn dr(&self) -> Register16 { Register16 { addr: self.base + 0x0c } }
 
+    pub fn set_baud_divisor(&self, div: SpiBaudDivisor) {
         unsafe {
-            cr1.write_masked(0b111 << 3, div as u16);
+            self.cr1().write_masked(0b111 << 3, div as u16);
         }
     }
 
     pub fn software_sub_management_sub_select_high_main_mode_spi_enable(&self) {
-        let cr1 = Register16 { addr: self.base + 0x00 };
-
-        let ssm_enable = 9;
-        let ssi_high = 8;
-        let spe_enable = 6;
-        let mstr_main = 2;
+        let ssm_enable = 1 << 9;
+        let ssi_high = 1 << 8;
+        let spe_enable = 1 << 6;
+        let mstr_main = 1 << 2;
 
         unsafe {
-            cr1.write_or(ssm_enable | ssi_high | spe_enable | mstr_main);
+            self.cr1().write_or(ssm_enable | ssi_high | spe_enable | mstr_main);
         }
     }
 
     pub fn write_byte(&self, b: u8) {
-        let dr = Register16 { addr: self.base + 0x0c };
-
         unsafe {
             while !self.transmit_buf_empty() {}
-            dr.write(b as u16);
+            self.dr().write(b as u16);
             while !self.transmit_buf_empty() {}
             while self.busy() {}
         }
     }
 
     pub fn transmit_buf_empty(&self) -> bool {
-        let sr = Register16 { addr: self.base + 0x08 };
-
         unsafe {
-            let status_word = sr.read();
+            let status_word = self.sr().read();
             let result = (status_word & (1 << 1)) != 0;
             return result;
         }
     }
 
     pub fn busy(&self) -> bool {
-        let sr = Register16 { addr: self.base + 0x08 };
-
         unsafe {
-            let status_word = sr.read();
+            let status_word = self.sr().read();
             let result = (status_word & (1 << 7)) != 0;
             return result;
         }

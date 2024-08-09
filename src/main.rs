@@ -13,6 +13,9 @@ const SYSCLK_SPEED: u32 = 16_000_000;
 #[entry]
 fn main() -> ! {
     RCC_AHB1ENR.enable_gpioa();
+    RCC_AHB1ENR.enable_gpioc();
+    RCC_AHB1ENR.enable_gpiod();
+    RCC_AHB1ENR.enable_gpiof();
     RCC_AHB1ENR.enable_gpiog();
     // RCC_AHB1ENR.enable!(GPIOA, GPIOG);
 
@@ -84,4 +87,7 @@ fn lcd_command(cmd: LcdCommand) {
 
     // Transmit the command byte
     SPI5.write_byte(cmd as u8);
+
+    // Turn chip select off (high)
+    GPIOC.set_high(2);
 }
