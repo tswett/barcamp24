@@ -186,6 +186,9 @@ pub struct Usart {
 }
 
 impl Usart {
+    fn sr(&self) -> Register16 { Register16 { addr: self.base + 0x00 } }
+    fn dr(&self) -> Register16 { Register16 { addr: self.base + 0x04 } }
+
     pub fn set_brr(&self, value: u16) {
         let brr = Register16 { addr: self.base + 0x08 };
 
@@ -205,13 +208,23 @@ impl Usart {
         }
     }
 
-    pub fn transmit_byte(&self, byte: u8) {
-        let sr = Register16 { addr: self.base + 0x00 };
-        let dr = Register16 { addr: self.base + 0x04 };
-
+    pub fn byte_received(&self) -> bool {
         unsafe {
-            while sr.read() & (1 << 7) == 0 {}
-            dr.write(byte as u16);
+            self.sr().read() & (1 << 5) != 0
+        }
+    }
+
+    pub fn transmit_byte(&self, byte: u8) {
+        unsafe {
+            while self.sr().read() & (1 << 7) == 0 {}
+            self.dr().write(byte as u16);
+        }
+    }
+
+    pub fn receive_byte(&self) -> u8 {
+        unsafe {
+            while !self.byte_received() {}
+            self.dr().read() as u8
         }
     }
 }
@@ -224,7 +237,7 @@ pub struct Spi {
 
 impl Spi {
     fn cr1(&self) -> Register16 { Register16 { addr: self.base + 0x00 } }
-    pub fn sr(&self) -> Register16 { Register16 { addr: self.base + 0x08 } }
+    fn sr(&self) -> Register16 { Register16 { addr: self.base + 0x08 } }
     fn dr(&self) -> Register16 { Register16 { addr: self.base + 0x0c } }
 
     pub fn set_baud_divisor(&self, div: SpiBaudDivisor) {

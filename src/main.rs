@@ -38,7 +38,7 @@ fn main() -> ! {
 
     draw_demo();
 
-    loop {}
+    echo_characters_on_screen();
 }
 
 fn uart1_set_up() {
@@ -52,6 +52,39 @@ fn uart1_set_up() {
 
     USART1.set_brr((SYSCLK_SPEED / 9600) as u16);
     USART1.enable_rx_tx();
+}
+
+fn echo_characters_on_screen() -> ! {
+    let mut row = 0;
+    let mut column = 0;
+
+    loop {
+        draw_cursor_at(row, column);
+
+        let byte = USART1.receive_byte();
+
+        match byte {
+            127 => {
+                draw_char_at(row, column, 0);
+                column -= 1;
+            },
+            _ => {
+                draw_char_at(row, column, byte % 32);
+                column += 1;
+            },
+        }
+
+        if column >= 53 {
+            row += 1;
+        }
+
+        if column < 0 {
+            row -= 1;
+        }
+
+        row = row.rem_euclid(30);
+        column = column.rem_euclid(53);
+    }
 }
 
 fn lcd_set_up_spi() {
@@ -81,19 +114,10 @@ fn lcd_set_up_driver() {
 }
 
 fn draw_demo() {
-    draw_string_at(0, 0, "DAD BAGGED THAT CAB");
-    draw_string_at(5, 5, "EGAD A BAD CABBAGE");
-    draw_string_at(8, 3, "ALAS DAD HAD A GLASS SALAD");
-    draw_string_at(14, 16, "SPHINX OF BLACK QUARTZ");
-    draw_string_at(15, 21, "JUDGE MY VOW");
-
-    draw_string_at(21, 0, "YOU CAN SEE THAT THE TEXT IS NOT APPEARING ON THE");
-    draw_string_at(22, 0, "SCREEN VERY FAST==THIS IS BECAUSE WE ARE COMMUNICAT=");
-    draw_string_at(23, 0, "ING WITH THE DISPLAY DRIVER USING SPI AND APPARENTLY");
-    draw_string_at(24, 0, "THAT IS A LOT SLOWER THAN EXPECTED FOR SOME REASON");
+    draw_string_at(14, 9, "PLEASE TYPE SOME STUFF ON THE UART");
 }
 
-fn draw_string_at(row: u16, column: u16, str: &str) {
+fn draw_string_at(row: i16, column: i16, str: &str) {
     let mut i = 0;
 
     for char_byte in str.as_bytes() {
@@ -102,7 +126,7 @@ fn draw_string_at(row: u16, column: u16, str: &str) {
     }
 }
 
-fn draw_char_at(row: u16, column: u16, char: u8) {
+fn draw_char_at(row: i16, column: i16, char: u8) {
     lcd_column_range(column * 6, column * 6 + 5);
     lcd_row_range(row * 8, row * 8 + 7);
 
@@ -119,7 +143,20 @@ fn draw_char_at(row: u16, column: u16, char: u8) {
     }
 }
 
-fn lcd_column_range(first_column: u16, last_column: u16) {
+fn draw_cursor_at(row: i16, column: i16) {
+    lcd_column_range(column * 6, column * 6 + 5);
+    lcd_row_range(row * 8, row * 8 + 7);
+
+    lcd_command(LcdCommand::MemoryWrite);
+
+    for _pixel in 0..(6*8) {
+        lcd_data(0x00); // blue
+        lcd_data(0x00); // green
+        lcd_data(0xff); // red
+    }
+}
+
+fn lcd_column_range(first_column: i16, last_column: i16) {
     lcd_command(LcdCommand::ColumnAddressSet);
     lcd_data((first_column >> 8 & 0xff) as u8);
     lcd_data((first_column & 0xff) as u8);
@@ -127,7 +164,7 @@ fn lcd_column_range(first_column: u16, last_column: u16) {
     lcd_data((last_column & 0xff) as u8);
 }
 
-fn lcd_row_range(first_row: u16, last_row: u16) {
+fn lcd_row_range(first_row: i16, last_row: i16) {
     lcd_command(LcdCommand::RowAddressSet);
     lcd_data((first_row >> 8 & 0xff) as u8);
     lcd_data((first_row & 0xff) as u8);
