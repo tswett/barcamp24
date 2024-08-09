@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 
+mod font;
 mod peripherals;
 
 use cortex_m_rt::entry;
@@ -78,13 +79,19 @@ fn lcd_test() {
 fn draw_demo() {
     lcd_command(LcdCommand::MemoryWrite);
 
-    for row in 0..320u32 {
-        for column in 0..240u32 {
-            lcd_data(0xff); // blue
-            //lcd_data(0x00); // green
-            //lcd_data(0xff); // red
-            lcd_data((column * 255 / 240) as u8); // green
-            lcd_data((row * 255 / 320) as u8); // red
+    for screen_row in 0..40 {
+        for char_row in (0..8).rev() {
+            for screen_column in (0..40).rev() {
+                for char_column in 0..6 {
+                    let char = (screen_row + screen_column) % 4;
+
+                    let on = font::FONT[char][char_column] & (1 << char_row) != 0;
+
+                    lcd_data(0x00); // blue
+                    lcd_data(if on {0xff} else {0x00}); // green
+                    lcd_data(0x00); // red
+                }
+            }
         }
     }
 }
