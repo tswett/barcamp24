@@ -64,6 +64,25 @@ fn echo_characters_on_screen() -> ! {
         let byte = USART1.receive_byte();
 
         match byte {
+            13 => {
+                draw_char_at(row, column, 0);
+                row += 1;
+                column = 0;
+            },
+            27 => {
+                let _byte2 = USART1.receive_byte();
+                let byte3 = USART1.receive_byte();
+
+                draw_char_at(row, column, 0);
+
+                match byte3 {
+                    65 => row -= 1,
+                    66 => row += 1,
+                    67 => column += 1,
+                    68 => column -= 1,
+                    _ => { },
+                }
+            }
             127 => {
                 draw_char_at(row, column, 0);
                 column -= 1;
