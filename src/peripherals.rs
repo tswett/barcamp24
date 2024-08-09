@@ -248,9 +248,13 @@ impl Spi {
         unsafe {
             while !self.transmit_buf_empty() {}
             self.dr().write(b as u16);
-            while !self.transmit_buf_empty() {}
-            while self.busy() {}
         }
+    }
+
+    pub fn write_byte_flush(&self, b: u8) {
+        self.write_byte(b);
+        while !self.transmit_buf_empty() {}
+        while self.busy() {}
     }
 
     pub fn transmit_buf_empty(&self) -> bool {

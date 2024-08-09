@@ -35,6 +35,8 @@ fn main() -> ! {
     lcd_set_up_spi();
     lcd_test();
 
+    draw_demo();
+
     loop {}
 }
 
@@ -73,9 +75,24 @@ fn lcd_test() {
     lcd_command(LcdCommand::DisplayOn);
 }
 
+fn draw_demo() {
+    lcd_command(LcdCommand::MemoryWrite);
+
+    for row in 0..320u32 {
+        for column in 0..240u32 {
+            lcd_data(0xff); // blue
+            //lcd_data(0x00); // green
+            //lcd_data(0xff); // red
+            lcd_data((column * 255 / 240) as u8); // green
+            lcd_data((row * 255 / 320) as u8); // red
+        }
+    }
+}
+
 enum LcdCommand {
     ExitSleepMode = 0x11,
     DisplayOn = 0x29,
+    MemoryWrite = 0x2c,
 }
 
 fn lcd_command(cmd: LcdCommand) {
@@ -86,8 +103,21 @@ fn lcd_command(cmd: LcdCommand) {
     GPIOC.set_low(2);
 
     // Transmit the command byte
-    SPI5.write_byte(cmd as u8);
+    SPI5.write_byte_flush(cmd as u8);
 
     // Turn chip select off (high)
     GPIOC.set_high(2);
+}
+
+fn lcd_data(data: u8) {
+    // Set data/command select high
+    GPIOD.set_high(13);
+
+    // Turn chip select on (low)
+    GPIOC.set_low(2);
+
+    // Transmit the data byte
+    SPI5.write_byte(data);
+
+    // For the sake of speed, we don't turn chip select off at this point
 }
