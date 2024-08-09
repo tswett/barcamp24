@@ -77,32 +77,68 @@ fn lcd_test() {
 }
 
 fn draw_demo() {
+    draw_char_at(0, 0, 1);
+    draw_char_at(0, 1, 0);
+    draw_char_at(0, 2, 2);
+    draw_char_at(0, 3, 1);
+    draw_char_at(0, 4, 2);
+    draw_char_at(0, 5, 0);
+    draw_char_at(0, 6, 1);
+    draw_char_at(0, 7, 0);
+    draw_char_at(0, 8, 3);
+    draw_char_at(0, 9, 1);
+    draw_char_at(0, 10, 2);
+
+    draw_char_at(5, 0, 1);
+    draw_char_at(5, 1, 2);
+    draw_char_at(5, 2, 2);
+    draw_char_at(5, 3, 1);
+}
+
+fn draw_char_at(row: u16, column: u16, char: u8) {
+    lcd_column_range(column * 6, column * 6 + 5);
+    lcd_row_range(row * 8, row * 8 + 7);
+
     lcd_command(LcdCommand::MemoryWrite);
 
-    for screen_row in 0..40 {
-        for char_row in (0..8).rev() {
-            for screen_column in (0..40).rev() {
-                for char_column in 0..6 {
-                    let char = (screen_row + screen_column) % 4;
+    for char_row in 0..8 {
+        for char_column in 0..6 {
+            let on = font::FONT[char as usize][char_column] & (1 << char_row) != 0;
 
-                    let on = font::FONT[char][char_column] & (1 << char_row) != 0;
-
-                    lcd_data(0x00); // blue
-                    lcd_data(if on {0xff} else {0x00}); // green
-                    lcd_data(0x00); // red
-                }
-            }
+            lcd_data(0x00); // blue
+            lcd_data(if on {0xff} else {0x00}); // green
+            lcd_data(0x00); // red
         }
     }
+}
+
+fn lcd_column_range(first_column: u16, last_column: u16) {
+    lcd_command(LcdCommand::ColumnAddressSet);
+    lcd_data((first_column >> 8 & 0xff) as u8);
+    lcd_data((first_column & 0xff) as u8);
+    lcd_data((last_column >> 8 & 0xff) as u8);
+    lcd_data((last_column & 0xff) as u8);
+}
+
+fn lcd_row_range(first_row: u16, last_row: u16) {
+    lcd_command(LcdCommand::RowAddressSet);
+    lcd_data((first_row >> 8 & 0xff) as u8);
+    lcd_data((first_row & 0xff) as u8);
+    lcd_data((last_row >> 8 & 0xff) as u8);
+    lcd_data((last_row & 0xff) as u8);
 }
 
 enum LcdCommand {
     ExitSleepMode = 0x11,
     DisplayOn = 0x29,
+    ColumnAddressSet = 0x2a,
+    RowAddressSet = 0x2b,
     MemoryWrite = 0x2c,
 }
 
 fn lcd_command(cmd: LcdCommand) {
+    SPI5.flush();
+
     // Set data/command select low
     GPIOD.set_low(13);
 

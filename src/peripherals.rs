@@ -251,10 +251,14 @@ impl Spi {
         }
     }
 
-    pub fn write_byte_flush(&self, b: u8) {
-        self.write_byte(b);
+    pub fn flush(&self) {
         while !self.transmit_buf_empty() {}
         while self.busy() {}
+    }
+
+    pub fn write_byte_flush(&self, b: u8) {
+        self.write_byte(b);
+        self.flush();
     }
 
     pub fn transmit_buf_empty(&self) -> bool {
