@@ -81,22 +81,17 @@ fn lcd_set_up_driver() {
 }
 
 fn draw_demo() {
-    draw_char_at(0, 0, 1);
-    draw_char_at(0, 1, 0);
-    draw_char_at(0, 2, 2);
-    draw_char_at(0, 3, 1);
-    draw_char_at(0, 4, 2);
-    draw_char_at(0, 5, 0);
-    draw_char_at(0, 6, 1);
-    draw_char_at(0, 7, 0);
-    draw_char_at(0, 8, 3);
-    draw_char_at(0, 9, 1);
-    draw_char_at(0, 10, 2);
+    draw_string_at(0, 0, "DAD BAGGED A CAB");
+    draw_string_at(5, 5, "EGAD A BAD CABBAGE");
+}
 
-    draw_char_at(5, 0, 1);
-    draw_char_at(5, 1, 2);
-    draw_char_at(5, 2, 2);
-    draw_char_at(5, 3, 1);
+fn draw_string_at(row: u16, column: u16, str: &str) {
+    let mut i = 0;
+
+    for char_byte in str.as_bytes() {
+        draw_char_at(row, column + i, *char_byte % 8);
+        i += 1;
+    }
 }
 
 fn draw_char_at(row: u16, column: u16, char: u8) {
